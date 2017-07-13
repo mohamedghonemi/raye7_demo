@@ -66,9 +66,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
 //        marker.map = googleMapView
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
+    func initializeUI() {
         toTextField.delegate = self
         fromTextField.delegate = self
         //
@@ -88,10 +86,15 @@ class ViewController: UIViewController, UITextFieldDelegate {
         toAutocompleteView.textField = toTextField
         toAutocompleteView.dataSource = self
         toAutocompleteView.delegate = self
-        
-        // Do any additional setup after loading the view, typically from a nib.
-        indicator.isHidden = false
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
         //
+        initializeUI()
+        //
+        indicator.isHidden = false
+        //Request location authorization
         _ = CLLocationManager.requestAuthorization().then { status in
             return  CLLocationManager.promise()
             }.then { location -> Void in
@@ -100,7 +103,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
                 self.setupGoogleMap(with: location.coordinate)
                 
             }.catch { error in
-                
+                //Handle error here
             }.always {
                 self.indicator.stopAnimating()
         }
@@ -109,16 +112,18 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
     
     
-    
     @IBAction func goAction(_ sender: Any) {
         
         if let fromPrediction = fromPrediction, let toPrediction = toPrediction {
+            indicator.isHidden = false
             //Get the details of places
+            //Here I use "when" function from promisekit, it ensure that both promises are executed before returning
             when(resolved: GoogleServices.getPlaceInfo(for: fromPrediction.placeID!), GoogleServices.getPlaceInfo(for: toPrediction.placeID!)).then { results -> Promise<Bool> in
                 
                 var firstPlace: GMSPlace? = nil
                 var secondPlace: GMSPlace? = nil
                 
+                //The results is array of two Result object, one for each promise
                 switch results[0] {
                     case .fulfilled(let value):
                         firstPlace = value
@@ -145,10 +150,12 @@ class ViewController: UIViewController, UITextFieldDelegate {
                     //Handle Error here
                 }.always {
                     //Hide activity
+                    self.indicator.isHidden = false
             }
           }
     }
     
+    ///Used to get the address search results of the typed text
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         currentTextField = textField
         fetcher?.sourceTextHasChanged(textField.text!)
@@ -156,6 +163,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
 }
 
+// MARK: - GMSAutocompleteFetcherDelegate methods
 
 extension ViewController: GMSAutocompleteFetcherDelegate {
     func didAutocomplete(with predictions: [GMSAutocompletePrediction]) {
