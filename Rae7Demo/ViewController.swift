@@ -113,9 +113,11 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     
     @IBAction func goAction(_ sender: Any) {
-        
+        //Remove old markers
+        googleMapView.clear()
+        //
         if let fromPrediction = fromPrediction, let toPrediction = toPrediction {
-            indicator.isHidden = false
+            indicator.startAnimating()
             //Get the details of places
             //Here I use "when" function from promisekit, it ensure that both promises are executed before returning
             when(resolved: GoogleServices.getPlaceInfo(for: fromPrediction.placeID!), GoogleServices.getPlaceInfo(for: toPrediction.placeID!)).then { results -> Promise<Bool> in
@@ -150,7 +152,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
                     //Handle Error here
                 }.always {
                     //Hide activity
-                    self.indicator.isHidden = false
+                    self.indicator.stopAnimating()
             }
           }
     }
